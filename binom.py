@@ -5,7 +5,8 @@ import utils
 
 Option = namedtuple('Option', ['S', 'K', 'price_fun'])
 
-def binom_option(option, r, sigma, N, steps):
+#pylint: disable-msg=too-many-arguments
+def binom_option(option, r, q, sigma, N, steps):
     """Calculate the value of an European option."""
     dt = N / steps
     u = math.exp(sigma * math.sqrt(dt))
@@ -13,9 +14,10 @@ def binom_option(option, r, sigma, N, steps):
 
     cc_rate = math.exp(r * dt) # Continuously compounded rate.
     u_minus_d = u - d
-    q_u = (cc_rate - d) / u_minus_d
-    q_d = (u - cc_rate) / u_minus_d
-    print("q_u: {}, q_d: {}, exp(r * dt): {}".format(q_u, q_d, cc_rate))
+    q_u = (math.exp((r - q) * dt) - d) / u_minus_d
+    q_d = 1 - q_u
+    print("u: {}, d: {}".format(u, d))
+    print("q_u: {}, q_d: {}, exp((r - q) * dt): {}".format(q_u, q_d, cc_rate))
 
     stock_tree = utils.Tree(steps)
     stock_tree.set_node(0, 0, option.S)
