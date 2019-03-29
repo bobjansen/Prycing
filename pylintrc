@@ -1,0 +1,5 @@
+[BASIC]
+good-names=n,i,j,u,d,N,r,x,y,dt
+
+[DESIGN]
+max-locals=25
