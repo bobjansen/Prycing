@@ -7,17 +7,27 @@ https://en.wikipedia.org/wiki/Greeks_(finance)#First-order_Greeks
 
 
 import math
+from enum import IntEnum
 from scipy.stats import norm
 import scipy.optimize as spOpt
 
 
-def find_implied_vol(price, S, K, tau, r, q, method='brentq'):
+class OptionSide(IntEnum):
+    """The side of an option, either call or put."""
+    Call = 0
+    Put = 1
+
+
+def find_implied_vol(price, side, S, K, tau, r, q):
     """Find the implied vol from price and parameters."""
     def price_from_vol(sigma):
         opt = BSMOption(S, K, tau, sigma, r, q)
-        return opt.fair_value()[0] - price
+        return opt.fair_value()[side] - price
 
-    return spOpt.root_scalar(price_from_vol, method=method, bracket=(0, 2))
+    if price_from_vol(0) > 0:
+        raise ValueError('Assuming 0 volatility gives price higher than given.')
+    # The default method 'brentq' should suffice for this purpose.
+    return spOpt.root_scalar(price_from_vol, bracket=(0, 2))
 
 
 class BSMOption():
