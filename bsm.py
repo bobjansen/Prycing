@@ -1,8 +1,7 @@
 """
 Functionality to capture the Black-Scholes-Merton model
 
-Formula's from:
-https://en.wikipedia.org/wiki/Greeks_(finance)#First-order_Greeks
+Formula's from: https://en.wikipedia.org/wiki/Greeks_(finance)
 """
 
 
@@ -33,6 +32,8 @@ def find_implied_vol(price, side, S, K, tau, r, q):
 class BSMOption():
     """
     An option under the Black-Scholes-Merton (BSM) model.
+
+    Sigma, r and q are expressed as fraction, tau is in years.
     """
     def __init__(self, S_, K_, tau_, sigma_, r_, q_):
         self.S = S_
@@ -45,9 +46,12 @@ class BSMOption():
     def fair_value(self):
         """Calculates the fair value under the BSM-model."""
         # If the volatility is zero, the option price is equal to its intrinsic
-        # value.
+        # value at maturity.
         if self.sigma == 0:
-            return(max(self.S - self.K, 0), max(self.K - self.S, 0))
+            discounted_stock = self._dividend_discount() * self.S
+            discounted_strike = self._discount() * self.K
+            intrinsic_value = discounted_stock - discounted_strike
+            return(max(intrinsic_value, 0), max(-intrinsic_value, 0))
         return (self.S * self._call_delta() - \
                      self._discount() * self.K * norm.cdf(self._d2()),
                 self._discount() * self.K * norm.cdf(-self._d2()) - \
