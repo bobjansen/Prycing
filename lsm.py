@@ -23,12 +23,13 @@ EXAMPLE_PATHS = np.reshape(np.ravel(np.transpose(np.matrix(
            1.00 0.92 0.84 1.01;
            1.00 0.88 1.22 1.34"""))), (4, 8))
 
-def lsm(paths, payoff_fun, discount_rate, T):
+def lsm(paths, payoff_fun, discount_rate, T, strike=1):
     """Implement the LSM method."""
     number_of_steps, number_of_paths = np.shape(paths)
     intrinsic_value = payoff_fun(paths)
     realized_cash_flows = intrinsic_value[-1, :]
     cash_flows = [realized_cash_flows]
+    ols_fits = []
 
     # The algorithm steps backwards, the range here is forwards, all i's below
     # are negated.
@@ -39,12 +40,14 @@ def lsm(paths, payoff_fun, discount_rate, T):
         current_intrinsic_values = intrinsic_value[-i, :]
         in_money = current_intrinsic_values > 0
 
-        ols_fit = regress_linear(
-            paths[-i, in_money], realized_cash_flows[in_money])
+        ols_fit = regress(
+            paths[-i, in_money] / strike, realized_cash_flows[in_money] / strike)
+        ols_fits.append(ols_fit)
 
         # For the in the money paths, find those for which immediate exercise
         # has higher value than continuing the option.
-        early_exercise = ols_fit.fittedvalues < current_intrinsic_values[in_money]
+        early_exercise = ols_fit.fittedvalues * strike < \
+                current_intrinsic_values[in_money]
         improvements = np.where(in_money)[0][early_exercise]
         # Add the new set of cash flows, zero out cash flows if the option was
         # exercised and use the undiscounted expected cash flows for regression
@@ -56,17 +59,18 @@ def lsm(paths, payoff_fun, discount_rate, T):
 
     # The option value give the estimated stopping policy is just the expected
     # value of the discounted cash flows.
-    return npv(cash_flows, discount_rate / (number_of_steps / T))
+    value = npv(cash_flows, discount_rate / (number_of_steps / T))
+    return (value, cash_flows, ols_fits)
 
 # Used as a polynomial basis in the regression.
 def l_0(x):
     """The first Laguerre polynomial."""
     return np.exp(-x/2)
 def l_1(x):
-    """The first Laguerre polynomial."""
+    """The second Laguerre polynomial."""
     return np.exp(-x/2) * (1 - x)
 def l_2(x):
-    """The first Laguerre polynomial."""
+    """The third Laguerre polynomial."""
     return np.exp(-x/2) * (1 - 2 * x + x ** 2 / 2)
 
 def american_put_payoff(strike):
@@ -126,22 +130,21 @@ def price_table(
     np.random.seed(42)
     output = {}
     for S in np.arange(36, 45, 2):
-        output[S] = {}
         for sigma in [0.2, 0.4]:
-            output[S][sigma] = {}
             for T in [1, 2]:
-                output[S][sigma][T] = {}
+                key = ' '.join([str(S), str(sigma), str(T)])
+                output[key] = {}
                 paths = gbm.simulate_gbm(
                     S, discount_rate, sigma,
                     number_of_paths, number_of_steps, T)
 
-                output[S][sigma][T]['AnalyticalEuropean'] = bsm.BSMOption(
+                output[key]['AnalyticalEuropean'] = bsm.BSMOption(
                     S, strike, T, sigma, discount_rate, 0).fair_value()[1]
-                output[S][sigma][T]['SimulatedEuropean'] = \
+                output[key]['SimulatedEuropean'] = \
                         sum(np.maximum(strike - paths[-1], 0)) \
                         / number_of_paths * math.exp(-discount_rate * T)
-                output[S][sigma][T]['LSMAmerican'] = lsm(
-                    paths, american_put_payoff(strike), discount_rate, T)
-
+                output[key]['LSMAmerican'] = lsm(
+                    paths, american_put_payoff(strike), discount_rate, T,
+                    strike)[0]
 
     return output
