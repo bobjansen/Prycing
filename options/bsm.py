@@ -77,7 +77,7 @@ class BSMOption():
         return -self._dividend_discount() * norm.cdf(-self._d1())
 
     def _d1(self):
-        numerator = self._log_monenyness() + self._q_drift() * self.tau
+        numerator = self._log_moneyness() + self._q_drift() * self.tau
         return numerator / self._scaled_vol()
 
     def _d2(self):
@@ -89,7 +89,7 @@ class BSMOption():
     def _scaled_vol(self):
         return self.sigma * math.sqrt(self.tau)
 
-    def _log_monenyness(self):
+    def _log_moneyness(self):
         return math.log(self.spot / self.strike)
 
     def _dividend_discount(self):
