@@ -7,6 +7,7 @@ Approach" by Francis A. Longstaff and Eduardo S. Schwartz.
 
 import math
 import numpy as np
+from scipy import stats
 import statsmodels.api as sm
 
 import bsm
@@ -113,14 +114,16 @@ def add_cash_flows(cash_flows, early_cash_flows):
 
 def npv(cash_flow_matrix, discount_rate):
     """Calculate the NPV of a set of cash flows given a discount factor."""
-    cash_flow_sum = 0.0
+    discounted_cash_flows = np.zeros(np.shape(cash_flow_matrix[0]))
     discount_step = math.exp(-discount_rate)
     discount_rate = discount_step
     for cash_flows in cash_flow_matrix:
-        cash_flow_sum += sum(cash_flows) * discount_rate
+        discounted_cash_flows += cash_flows * discount_rate
         discount_rate *= discount_step
 
-    return cash_flow_sum / np.shape(cash_flow_matrix)[1]
+    value = sum(discounted_cash_flows) / np.shape(cash_flow_matrix)[1]
+    standard_error = stats.sem(discounted_cash_flows)
+    return (value, standard_error)
 
 def price_table(
         number_of_paths, number_of_steps,
@@ -138,13 +141,19 @@ def price_table(
                     S, discount_rate, sigma,
                     number_of_paths, number_of_steps, T)
 
-                output[key]['AnalyticalEuropean'] = bsm.BSMOption(
+                output[key]['European Price'] = bsm.BSMOption(
                     S, strike, T, sigma, discount_rate, 0).fair_value()[1]
-                output[key]['SimulatedEuropean'] = \
-                        sum(np.maximum(strike - paths[-1], 0)) \
-                        / number_of_paths * math.exp(-discount_rate * T)
-                output[key]['LSMAmerican'] = lsm(
+
+                per_path_value = np.maximum(strike - paths[-1], 0) * \
+                        math.exp(-discount_rate)
+                output[key]['Simulated European Price'] = \
+                        sum(per_path_value) / number_of_paths
+                output[key]['Simulated European SE'] = stats.sem(per_path_value)
+
+                lsm_result = lsm(
                     paths, american_put_payoff(strike), discount_rate, T,
                     strike)[0]
+                output[key]['LSM American Price'] = lsm_result[0]
+                output[key]['LSM American SE'] = lsm_result[1]
 
     return output
