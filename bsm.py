@@ -17,10 +17,12 @@ class OptionSide(IntEnum):
     Put = 1
 
 
-def find_implied_vol(price, side, S, K, tau, r, q):
+def find_implied_vol(price, side, spot, strike, tau,
+                     discount_rate, dividend_yield):
     """Find the implied vol from price and parameters."""
     def price_from_vol(sigma):
-        opt = BSMOption(S, K, tau, sigma, r, q)
+        opt = BSMOption(spot, strike, tau, sigma,
+                        discount_rate, dividend_yield)
         return opt.fair_value()[side] - price
 
     if price_from_vol(0) > 0:
@@ -33,29 +35,31 @@ class BSMOption():
     """
     An option under the Black-Scholes-Merton (BSM) model.
 
-    Sigma, r and q are expressed as fraction, tau is in years.
+    Sigma, discount_rate and dividend_yield are expressed as fraction, tau is in years.
     """
-    def __init__(self, S_, K_, tau_, sigma_, r_, q_):
-        self.S = S_
-        self.K = K_
+    def __init__(self,
+                 spot_, strike_, tau_, sigma_,
+                 discount_rate_, dividend_yield_):
+        self.spot = spot_
+        self.strike = strike_
         self.tau = tau_
         self.sigma = sigma_
-        self.r = r_
-        self.q = q_
+        self.discount_rate = discount_rate_
+        self.dividend_yield = dividend_yield_
 
     def fair_value(self):
         """Calculates the fair value under the BSM-model."""
         # If the volatility is zero, the option price is equal to its intrinsic
         # value at maturity.
         if self.sigma == 0:
-            discounted_stock = self._dividend_discount() * self.S
-            discounted_strike = self._discount() * self.K
+            discounted_stock = self._dividend_discount() * self.spot
+            discounted_strike = self._discount() * self.strike
             intrinsic_value = discounted_stock - discounted_strike
             return(max(intrinsic_value, 0), max(-intrinsic_value, 0))
-        return (self.S * self._call_delta() - \
-                     self._discount() * self.K * norm.cdf(self._d2()),
-                self._discount() * self.K * norm.cdf(-self._d2()) - \
-                     self.S * self._dividend_discount() * norm.cdf(-self._d1()))
+        return (self.spot * self._call_delta() - \
+                     self._discount() * self.strike * norm.cdf(self._d2()),
+                self._discount() * self.strike * norm.cdf(-self._d2()) - \
+                     self.spot * self._dividend_discount() * norm.cdf(-self._d1()))
 
     def delta(self):
         """Calculates the delta under the BSM-model."""
@@ -63,7 +67,7 @@ class BSMOption():
 
     def vega(self):
         """Calculates the vega under the BSM-model."""
-        return self.S * self._dividend_discount() * norm.pdf(self._d1()) * \
+        return self.spot * self._dividend_discount() * norm.pdf(self._d1()) * \
                 self.tau
 
     def _call_delta(self):
@@ -80,16 +84,16 @@ class BSMOption():
         return self._d1() - self._scaled_vol()
 
     def _q_drift(self):
-        return self.r - self.q + self.sigma ** 2 / 2
+        return self.discount_rate - self.dividend_yield + self.sigma ** 2 / 2
 
     def _scaled_vol(self):
         return self.sigma * math.sqrt(self.tau)
 
     def _log_monenyness(self):
-        return math.log(self.S / self.K)
+        return math.log(self.spot / self.strike)
 
     def _dividend_discount(self):
-        return math.exp(-self.q * self.tau)
+        return math.exp(-self.dividend_yield * self.tau)
 
     def _discount(self):
-        return math.exp(-self.r * self.tau)
+        return math.exp(-self.discount_rate * self.tau)

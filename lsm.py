@@ -132,17 +132,19 @@ def price_table(
     """Create a table of prices as Table 1 in the Longstaff Schwartz paper."""
     np.random.seed(42)
     output = {}
-    for S in np.arange(36, 45, 2):
+    for starting_stock_price in np.arange(36, 45, 2):
         for sigma in [0.2, 0.4]:
             for T in [1, 2]:
-                key = ' '.join([str(S), str(sigma), str(T)])
+                key = ' '.join([str(starting_stock_price),
+                                str(sigma), str(T)])
                 output[key] = {}
                 paths = gbm.simulate_gbm(
-                    S, discount_rate, sigma,
+                    starting_stock_price, discount_rate, sigma,
                     number_of_paths, number_of_steps, T)
 
                 output[key]['European Price'] = bsm.BSMOption(
-                    S, strike, T, sigma, discount_rate, 0).fair_value()[1]
+                    starting_stock_price, strike, T, sigma,
+                    discount_rate, 0).fair_value()[1]
 
                 per_path_value = np.maximum(strike - paths[-1], 0) * \
                         math.exp(-discount_rate)
