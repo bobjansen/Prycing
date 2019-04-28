@@ -17,8 +17,15 @@ class OptionSide(IntEnum):
     Put = 1
 
 
-def find_implied_vol(price, side, spot, strike, tau,
-                     discount_rate, dividend_yield):
+def find_implied_vol(
+        price: float,
+        side: OptionSide,
+        spot: float,
+        strike: float,
+        tau: float,
+        discount_rate: float,
+        dividend_yield: float
+):
     """Find the implied vol from price and parameters."""
     def price_from_vol(sigma):
         opt = BSMOption(spot, strike, tau, sigma,
@@ -35,11 +42,18 @@ class BSMOption():
     """
     An option under the Black-Scholes-Merton (BSM) model.
 
-    Sigma, discount_rate and dividend_yield are expressed as fraction, tau is in years.
+    Sigma, discount_rate and dividend_yield are expressed as fraction, tau is
+    in years.
     """
-    def __init__(self,
-                 spot_, strike_, tau_, sigma_,
-                 discount_rate_, dividend_yield_):
+    def __init__(
+            self,
+            spot_: float,
+            strike_: float,
+            tau_: float,
+            sigma_: float,
+            discount_rate_: float,
+            dividend_yield_: float
+    ):
         self.spot = spot_
         self.strike = strike_
         self.tau = tau_

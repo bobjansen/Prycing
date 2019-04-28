@@ -5,8 +5,14 @@ import utils
 
 Option = namedtuple('Option', ['S', 'K', 'price_fun'])
 
-#pylint: disable-msg=too-many-arguments
-def binom_option(option, discount_rate, dividend_yield, sigma, N, steps):
+def binom_option(
+        option: Option,
+        discount_rate: float,
+        dividend_yield: float,
+        sigma: float,
+        N: int,
+        steps: int
+):
     """Calculate the value of an European option."""
     dt = N / steps
     u = math.exp(sigma * math.sqrt(dt))
