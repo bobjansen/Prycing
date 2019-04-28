@@ -73,7 +73,7 @@ class BSMOption():
         return (self.spot * self._call_delta() - \
                      self._discount() * self.strike * norm.cdf(self._d2()),
                 self._discount() * self.strike * norm.cdf(-self._d2()) - \
-                     self.spot * self._dividend_discount() * norm.cdf(-self._d1()))
+                     self.spot * -self._put_delta())
 
     def delta(self):
         """Calculates the delta under the BSM-model."""
