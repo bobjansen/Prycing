@@ -6,6 +6,7 @@ Formula's from: https://en.wikipedia.org/wiki/Greeks_(finance)
 
 
 import math
+from dataclasses import dataclass
 from enum import IntEnum
 from scipy.stats import norm
 import scipy.optimize as spOpt
@@ -38,6 +39,7 @@ def find_implied_vol(
     return spOpt.root_scalar(price_from_vol, bracket=(0, 2))
 
 
+@dataclass(frozen=True)
 class BSMOption():
     """
     An option under the Black-Scholes-Merton (BSM) model.
@@ -45,21 +47,12 @@ class BSMOption():
     Sigma, discount_rate and dividend_yield are expressed as fraction, tau is
     in years.
     """
-    def __init__(
-            self,
-            spot_: float,
-            strike_: float,
-            tau_: float,
-            sigma_: float,
-            discount_rate_: float,
-            dividend_yield_: float
-    ):
-        self.spot = spot_
-        self.strike = strike_
-        self.tau = tau_
-        self.sigma = sigma_
-        self.discount_rate = discount_rate_
-        self.dividend_yield = dividend_yield_
+    spot: float
+    strike: float
+    tau: float
+    sigma: float
+    discount_rate: float
+    dividend_yield: float
 
     def fair_value(self):
         """Calculates the fair value under the BSM-model."""
