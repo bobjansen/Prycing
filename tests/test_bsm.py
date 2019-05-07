@@ -1,7 +1,27 @@
 """Test the BSM code."""
 import unittest
+from hypothesis import given
+from hypothesis.strategies import floats
 
 from Prycing.options.bsm import BSMOption, find_implied_vol, OptionSide
+
+class TestPutCallEquality(unittest.TestCase):
+    """Test that C(S, K) == P(K, S) if rates are zero."""
+    @given(floats(0, 10), floats(0, 10), floats(0, 10), floats(0, 10))
+    def test_put_call_equality(
+            self,
+            spot,
+            strike,
+            time_to_maturity,
+            sigma
+        ):
+        """Implement the test using hypothesis."""
+        option1 = BSMOption(spot, strike, time_to_maturity, sigma, 0, 0)
+        option2 = BSMOption(strike, spot, time_to_maturity, sigma, 0, 0)
+        fair_value1 = option1.fair_value()
+        fair_value2 = option2.fair_value()
+        self.assertAlmostEqual(fair_value1[0], fair_value2[1])
+        self.assertAlmostEqual(fair_value1[1], fair_value2[0])
 
 #pylint: disable-msg=attribute-defined-outside-init
 #pylint: disable-msg=too-many-instance-attributes

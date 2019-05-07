@@ -54,15 +54,28 @@ class BSMOption():
     discount_rate: float
     dividend_yield: float
 
+    def __post_init__(self):
+        if self.spot < 0:
+            raise ValueError('Spot should be positive')
+        if self.strike < 0:
+            raise ValueError('Strike should be positive')
+        if self.tau < 0:
+            raise ValueError('tau should be positive')
+        if self.sigma < 0:
+            raise ValueError('sigma should be positive')
+
     def fair_value(self):
         """Calculates the fair value under the BSM-model."""
         # If the volatility is zero, the option price is equal to its intrinsic
         # value at maturity.
-        if self.sigma == 0:
+        if self.sigma == 0 or \
+                self.tau == 0 or \
+                self.strike == 0 or \
+                self.spot == 0:
             discounted_stock = self._dividend_discount() * self.spot
             discounted_strike = self._discount() * self.strike
             intrinsic_value = discounted_stock - discounted_strike
-            return(max(intrinsic_value, 0), max(-intrinsic_value, 0))
+            return (max(intrinsic_value, 0), max(-intrinsic_value, 0))
         return (self.spot * self._call_delta() - \
                      self._discount() * self.strike * norm.cdf(self._d2()),
                 self._discount() * self.strike * norm.cdf(-self._d2()) - \
@@ -70,6 +83,11 @@ class BSMOption():
 
     def delta(self):
         """Calculates the delta under the BSM-model."""
+        # The underlying must be allowed to vary for delta to make sense.
+        if self.sigma == 0 or self.tau == 0 or self.spot == 0:
+            return (float('NaN'), float('NaN'))
+        if self.strike == 0:
+            return (1, 0)
         return (self._call_delta(), self._put_delta())
 
     def vega(self):
