@@ -165,3 +165,22 @@ def price_table(
                 output[key]['LSM American SE'] = lsm_result[1]
 
     return output
+
+def simulate_and_price(
+        number_of_paths, number_of_steps,
+        strike, discount_rate,
+        starting_stock_price, sigma, T
+):
+    """Simulate stock prices and give the American option price."""
+    paths = gbm.simulate_gbm(
+        starting_stock_price, discount_rate, sigma,
+        number_of_paths, number_of_steps, T)
+
+    european_price = bsm.BSMOption(
+        starting_stock_price, strike, T, sigma,
+        discount_rate, 0).fair_value()[1]
+    lsm_price = lsm(
+        paths, american_put_payoff(strike), regress,
+        discount_rate, T, strike)[0][0]
+
+    return (european_price, lsm_price)
