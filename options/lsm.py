@@ -48,8 +48,8 @@ def lsm(paths, payoff_fun, regress_fun, discount_rate, T, strike=1):
                 realized_cash_flows[in_money] / strike)
             ols_fits.append(ols_fit)
 
-            # For the in the money paths, find those for which immediate exercise
-            # has higher value than continuing the option.
+            # For the in the money paths, find those for which immediate
+            # exercise has higher value than continuing the option.
             early_exercise = ols_fit.fittedvalues * strike < \
                     current_intrinsic_values[in_money]
             improvements = np.where(in_money)[0][early_exercise]
