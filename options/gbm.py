@@ -3,8 +3,10 @@ import numpy as np
 
 def simulate_gbm(start_value, mu, sigma, number_of_paths, number_of_steps, T):
     """Simulate number_of_paths GBM's"""
+    if T <= 0:
+        raise ValueError('T must be positive.')
     if number_of_paths % 2 == 1:
-        raise ValueError('Number of paths needs to be even')
+        raise ValueError('Number of paths needs to be even.')
     dt = T / number_of_steps
     sqrt_dt = np.sqrt(dt)
     drift = (mu - 0.5 * sigma ** 2) * dt
