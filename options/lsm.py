@@ -24,7 +24,7 @@ EXAMPLE_PATHS = np.reshape(np.ravel(np.transpose(np.matrix(
            1.00 0.92 0.84 1.01;
            1.00 0.88 1.22 1.34"""))), (4, 8))
 
-def lsm(paths, payoff_fun, discount_rate, T, strike=1):
+def lsm(paths, payoff_fun, regress_fun, discount_rate, T, strike=1):
     """Implement the LSM method."""
     number_of_steps, number_of_paths = np.shape(paths)
     intrinsic_value = payoff_fun(paths)
@@ -41,20 +41,26 @@ def lsm(paths, payoff_fun, discount_rate, T, strike=1):
         current_intrinsic_values = intrinsic_value[-i, :]
         in_money = current_intrinsic_values > 0
 
-        ols_fit = regress(
-            paths[-i, in_money] / strike, realized_cash_flows[in_money] / strike)
-        ols_fits.append(ols_fit)
+        early_cash_flows = np.zeros(number_of_paths)
+        if np.any(in_money):
+            ols_fit = regress_fun(
+                paths[-i, in_money] / strike,
+                realized_cash_flows[in_money] / strike)
+            ols_fits.append(ols_fit)
 
-        # For the in the money paths, find those for which immediate exercise
-        # has higher value than continuing the option.
-        early_exercise = ols_fit.fittedvalues * strike < \
-                current_intrinsic_values[in_money]
-        improvements = np.where(in_money)[0][early_exercise]
+            # For the in the money paths, find those for which immediate exercise
+            # has higher value than continuing the option.
+            early_exercise = ols_fit.fittedvalues * strike < \
+                    current_intrinsic_values[in_money]
+            improvements = np.where(in_money)[0][early_exercise]
+            early_cash_flows[improvements] = \
+                    current_intrinsic_values[improvements]
+        else:
+            ols_fits.append([])
+
         # Add the new set of cash flows, zero out cash flows if the option was
         # exercised and use the undiscounted expected cash flows for regression
         # in the next step.
-        early_cash_flows = np.zeros(number_of_paths)
-        early_cash_flows[improvements] = current_intrinsic_values[improvements]
         (cash_flows, realized_cash_flows) = \
                 add_cash_flows(cash_flows, early_cash_flows)
 
@@ -153,8 +159,8 @@ def price_table(
                 output[key]['Simulated European SE'] = stats.sem(per_path_value)
 
                 lsm_result = lsm(
-                    paths, american_put_payoff(strike), discount_rate, T,
-                    strike)[0]
+                    paths, american_put_payoff(strike), regress,
+                    discount_rate, T, strike)[0]
                 output[key]['LSM American Price'] = lsm_result[0]
                 output[key]['LSM American SE'] = lsm_result[1]
 
