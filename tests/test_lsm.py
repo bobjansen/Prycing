@@ -7,7 +7,7 @@ from hypothesis.strategies import floats
 
 import Prycing.options.gbm as gbm
 from Prycing.options.lsm import simulate_and_price, lsm, american_put_payoff, \
-        regress
+        regress_laguerre_2
 
 class Table1Prices(unittest.TestCase):
     """Compate prices to the prices in the paper (table 1)."""
@@ -31,7 +31,7 @@ class Table1Prices(unittest.TestCase):
                         number_of_paths, number_of_steps, T)
 
                     lsm_price = lsm(
-                        paths, american_put_payoff(strike), regress,
+                        paths, american_put_payoff(strike), regress_laguerre_2,
                         discount_rate, T, strike)[0][0]
                     self.assertAlmostEqual(lsm_price, self.prices[i])
                     i = i + 1

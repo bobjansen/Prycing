@@ -24,7 +24,7 @@ EXAMPLE_PATHS = np.reshape(np.ravel(np.transpose(np.matrix(
            1.00 0.92 0.84 1.01;
            1.00 0.88 1.22 1.34"""))), (4, 8))
 
-def lsm(paths, payoff_fun, regress_fun, discount_rate, T, strike=1):
+def lsm(paths, payoff_fun, regress_fun, discount_rate, T, strike):
     """Implement the LSM method."""
     number_of_steps, number_of_paths = np.shape(paths)
     intrinsic_value = payoff_fun(paths)
@@ -86,7 +86,7 @@ def american_put_payoff(strike):
         return np.maximum(strike - values, 0.0)
     return payoff_fun
 
-def regress(stock_prices, cash_flows):
+def regress_laguerre_2(stock_prices, cash_flows):
     """Perform the LSM regression."""
     mat_x = np.column_stack((
                 np.ones(len(stock_prices)),
@@ -159,7 +159,7 @@ def price_table(
                 output[key]['Simulated European SE'] = stats.sem(per_path_value)
 
                 lsm_result = lsm(
-                    paths, american_put_payoff(strike), regress,
+                    paths, american_put_payoff(strike), regress_laguerre_2,
                     discount_rate, T, strike)[0]
                 output[key]['LSM American Price'] = lsm_result[0]
                 output[key]['LSM American SE'] = lsm_result[1]
@@ -180,7 +180,7 @@ def simulate_and_price(
         starting_stock_price, strike, T, sigma,
         discount_rate, 0).fair_value()[1]
     lsm_price = lsm(
-        paths, american_put_payoff(strike), regress,
+        paths, american_put_payoff(strike), regress_laguerre_2,
         discount_rate, T, strike)[0][0]
 
     return (european_price, lsm_price)
