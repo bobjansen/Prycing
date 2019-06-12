@@ -153,7 +153,7 @@ def price_table(
                     discount_rate, 0).fair_value()[1]
 
                 per_path_value = np.maximum(strike - paths[-1], 0) * \
-                        math.exp(-discount_rate)
+                        math.exp(-discount_rate * T)
                 output[key]['Simulated European Price'] = \
                         sum(per_path_value) / number_of_paths
                 output[key]['Simulated European SE'] = stats.sem(per_path_value)
