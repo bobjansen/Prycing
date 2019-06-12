@@ -2,8 +2,96 @@
 import unittest
 from hypothesis import given
 from hypothesis.strategies import floats
+import numpy as np
 
 from Prycing.options.bsm import BSMOption, find_implied_vol, OptionSide
+
+class TestImpliedVol(unittest.TestCase):
+    """Test the implied vol functionality."""
+    @given(floats(1, 1000), floats(1, 1000), floats(0.1, 10),
+           floats(0.01, 4), floats(-0.5, 0.5), floats(-0.5, 0.5))
+    def test_vol_finder(self, spot, strike, time_to_maturity, sigma,
+                        discount_rate, dividend_yield):
+        """Calculate prices and use the prices to recover sigma."""
+        prices = BSMOption(spot, strike, time_to_maturity, sigma,
+                           discount_rate, dividend_yield).fair_value()
+
+        # The option price as a function of sigma can be very flat. Therefore,
+        # comparing sigma's directly doesn't work as varying sigma's can have
+        # close prices. Instead, compare the resulting prices of the options.
+        # If prices are close the value found is a reasonable estimation of the
+        # implied vol.
+        sigma_call = find_implied_vol(prices[0], OptionSide.Call,
+                                      spot, strike, time_to_maturity,
+                                      discount_rate, dividend_yield).root
+        if sigma_call == 0:
+            sigma_call = 1e-6
+        prices_call = BSMOption(spot, strike, time_to_maturity, sigma_call,
+                                discount_rate, dividend_yield).fair_value()[0]
+        self.assertAlmostEqual(prices[0], prices_call)
+
+        sigma_put = find_implied_vol(prices[0], OptionSide.Call,
+                                     spot, strike, time_to_maturity,
+                                     discount_rate, dividend_yield).root
+        if sigma_put == 0:
+            sigma_put = 1e-6
+        prices_put = BSMOption(spot, strike, time_to_maturity, sigma_put,
+                               discount_rate, dividend_yield).fair_value()[1]
+        self.assertAlmostEqual(prices[1], prices_put)
+
+    def test_edge_cases(self):
+        """Test for cases implied volatily < 0 or implied volatiliy > 4."""
+        self.assertRaises(
+            ValueError,
+            find_implied_vol, 10, OptionSide.Call, 10, 10, 1, 0, 0)
+        self.assertRaises(
+            ValueError,
+            find_implied_vol, 0.001, OptionSide.Call, 100, 10, 1, 0, 0)
+
+
+class TestBSMOptionSanityChecks(unittest.TestCase):
+    """Test that edge cases in BSMOptions are correctly handled."""
+    def test_init(self):
+        """Check the tests on init."""
+        self.assertRaises(
+            ValueError,
+            BSMOption, -1, -1, -1, -1, 0, 0)
+        self.assertRaises(
+            ValueError,
+            BSMOption, 0, -1, -1, -1, 0, 0)
+        self.assertRaises(
+            ValueError,
+            BSMOption, 0, 0, -1, -1, 0, 0)
+        self.assertRaises(
+            ValueError,
+            BSMOption, 0, 0, 0, -1, 0, 0)
+
+    def test_delta_checks(self):
+        """Test the checks made in delta calculation."""
+        option = BSMOption(0, 1, 1, 1, 0, 0)
+        self.assertTrue(np.all(np.isnan(option.delta())))
+        option = BSMOption(1, 0, 1, 1, 0, 0)
+        self.assertEqual(option.delta(), (1, 0))
+        option = BSMOption(1, 1, 0, 1, 0, 0)
+        self.assertTrue(np.all(np.isnan(option.delta())))
+        option = BSMOption(1, 1, 1, 0, 0, 0)
+        self.assertTrue(np.all(np.isnan(option.delta())))
+
+
+class TestGreeks(unittest.TestCase):
+    """Test one delta calculation."""
+    def test_delta(self):
+        """Calculate and compare delta."""
+        self.assertEqual(
+            BSMOption(10, 10, 1, .30, 0.08, 0.0).delta(),
+            (0.6615388804893103, -0.33846111951068963))
+
+    def test_vega(self):
+        """Calculate and compare vega."""
+        self.assertEqual(
+            BSMOption(10, 10, 1, .30, 0.08, 0.0).vega(),
+            0.036577236641400244)
+
 
 class TestPutCallEquality(unittest.TestCase):
     """Test that C(S, K) == P(K, S) if rates are zero."""

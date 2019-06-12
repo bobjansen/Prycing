@@ -131,10 +131,11 @@ def npv(cash_flow_matrix, discount_rate):
     standard_error = stats.sem(discounted_cash_flows)
     return (value, standard_error)
 
+
 def price_table(
         number_of_paths, number_of_steps,
         strike=40, discount_rate=0.06
-):
+):  #pragma: no cover
     """Create a table of prices as Table 1 in the Longstaff Schwartz paper."""
     np.random.seed(42)
     output = {}
@@ -165,22 +166,3 @@ def price_table(
                 output[key]['LSM American SE'] = lsm_result[1]
 
     return output
-
-def simulate_and_price(
-        number_of_paths, number_of_steps,
-        strike, discount_rate,
-        starting_stock_price, sigma, T
-):
-    """Simulate stock prices and give the American option price."""
-    paths = gbm.simulate_gbm(
-        starting_stock_price, discount_rate, sigma,
-        number_of_paths, number_of_steps, T)
-
-    european_price = bsm.BSMOption(
-        starting_stock_price, strike, T, sigma,
-        discount_rate, 0).fair_value()[1]
-    lsm_price = lsm(
-        paths, american_put_payoff(strike), regress_laguerre_2,
-        discount_rate, T, strike)[0][0]
-
-    return (european_price, lsm_price)

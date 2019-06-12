@@ -59,13 +59,13 @@ class BSMOption():
     dividend_yield: float
 
     def __post_init__(self):
-        if self.spot < 0:
+        if self.spot < 0.0:
             raise ValueError('Spot should be positive')
-        if self.strike < 0:
+        if self.strike < 0.0:
             raise ValueError('Strike should be positive')
-        if self.tau < 0:
+        if self.tau < 0.0:
             raise ValueError('tau should be positive')
-        if self.sigma < 0:
+        if self.sigma < 0.0:
             raise ValueError('sigma should be positive')
 
     def fair_value(self):
