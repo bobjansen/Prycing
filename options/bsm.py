@@ -35,8 +35,12 @@ def find_implied_vol(
 
     if price_from_vol(0) > 0:
         raise ValueError('Assuming 0 volatility gives price higher than given.')
+    if price_from_vol(4) < 0:
+        raise ValueError(
+            'Assuming volatility of 400% gives a price lower than given.')
+
     # The default method 'brentq' should suffice for this purpose.
-    return spOpt.root_scalar(price_from_vol, bracket=(0, 2))
+    return spOpt.root_scalar(price_from_vol, bracket=(0, 4))
 
 
 @dataclass(frozen=True)
