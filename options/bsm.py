@@ -93,7 +93,7 @@ class BSMOption():
     def vega(self):
         """Calculates the vega under the BSM-model."""
         return self.spot * self._dividend_discount() * norm.pdf(self._d1()) * \
-                self.tau
+                math.sqrt(self.tau) / 100
 
     def _call_delta(self):
         return self._dividend_discount() * norm.cdf(self._d1())
